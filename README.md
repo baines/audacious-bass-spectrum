@@ -4,13 +4,14 @@ It's not very good code, and uses a lot of magic numbers that were just randomly
 Works with audacious 3.4.3, probably needs changes for other versions. Install
 it by putting the .so in ~/.local/share/audacious/Plugins/
 
-Screenshot:
+Screenshot:    
 ![Screenshot](screenshot.png)
 
 Inspired by the old Monstercat video format and uses example FFTW3 code from 
 http://www.fftw.org/pruned.html.
 
 Original cairo-spectrum license:
+```
 /*
 * Copyright (c) 2011 William Pitcock <nenolod@dereferenced.org>.
 *
@@ -30,3 +31,4 @@ Original cairo-spectrum license:
 * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 * POSSIBILITY OF SUCH DAMAGE.
 */
+```
