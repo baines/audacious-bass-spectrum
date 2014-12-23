@@ -1,11 +1,14 @@
 A modification of the cairo-spectrum audacious plugin for bass frequencies.
 It's not very good code, and uses a lot of magic numbers that were just randomly tweaked until it looked reasonable.
 
-Works with audacious 3.4.3, probably needs changes for other versions. Install
-it by putting the .so in ~/.local/share/audacious/Plugins/
+Works with audacious 3.4.3 and 3.5, probably needs changes for other versions.
+ 
+Install it by putting the .so in ~/.local/share/audacious/Plugins/ for 3.4.3.
+For 3.5, audacious doesn't look in this folder anymore for whatever reason, so
+you'll have to put it in /usr/lib/<arch>/audacious/Visualization/ instead.
 
-Screenshot:    
-![Screenshot](screenshot.png)
+Example gif (playing Pegboard Nerds - Self Destruct):    
+![Screenshot](screenshot.gif)
 
 Inspired by the old Monstercat video format and uses example FFTW3 code from 
 http://www.fftw.org/pruned.html.
