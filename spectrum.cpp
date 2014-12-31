@@ -35,7 +35,14 @@ extern "C" {
 #include <algorithm>
 #include <numeric>
 
-#define MAX_BANDS	(240)
+static const size_t FFT_SIZE = 40000;
+static const size_t FFT_USED = 256;
+static const size_t PCM_SAMPLES = 512;
+static const size_t SAMPLE_CHUNKS = 2;
+static const size_t REQUIRED_SAMPLES = PCM_SAMPLES * SAMPLE_CHUNKS;
+static const size_t SKIP_BANDS = 8;
+static const size_t MAX_BANDS = 256 - SKIP_BANDS;
+static const size_t MAX_PIXEL_HEIGHT = 32;
 
 static GtkWidget * spect_widget = NULL;
 static gint width, height, bands;
@@ -93,42 +100,55 @@ static void do_fft(int N, int K, double* in){
   }
 }
 
+static double volume = 0.0;
+
 static void render_cb (const float* pcm){
 
 	g_return_if_fail (spect_widget);
 
-	copy(pcm, pcm + 512, back_inserter(samples));
+	copy(pcm, pcm + PCM_SAMPLES, back_inserter(samples));
+	
+	double new_volume = 0.0;
+	for(int i = 0; i < PCM_SAMPLES; ++i){
+		new_volume += abs(pcm[i]);
+	}
 
-	if(samples.size() >= (512*2)){
-		for(int i = 0; i < (44000-(512*2)); ++i){
+	new_volume = min(1.0, max(0.05, new_volume / (double)(PCM_SAMPLES/2.5)));
+	volume = (volume * 0.8) + (new_volume * 0.2);
+	
+	for(int i = 0; i < PCM_SAMPLES; ++i){
+		samples[i] /= volume;
+	}
+	
+	if(samples.size() >= REQUIRED_SAMPLES){
+		for(int i = 0; i < (FFT_SIZE - REQUIRED_SAMPLES); ++i){
 			samples.push_back(0.0);
 		}
 		
 		if(!fft_out){
-			setup_fft(44000, 256, samples.data());
+			setup_fft(FFT_SIZE, FFT_USED, samples.data());
 		}
 		
-		do_fft(44000, 256, samples.data());
+		do_fft(FFT_SIZE, FFT_USED, samples.data());
+				
+		samples.erase(samples.begin() + REQUIRED_SAMPLES, samples.end());
+		samples.erase(samples.begin(), samples.begin() + PCM_SAMPLES);
 		
-		double volume = (volume * 0.6 + (cabs(accumulate(fft_out, fft_out+256, 0.0+0.0I) / 256) / 64.) * 0.4);
-		
-		samples.erase(samples.begin()+(512*2), samples.end());
-		samples.erase(samples.begin(), samples.begin()+512);
-		
-		int x = 8;
+		int x = SKIP_BANDS;
 		double m = 0.;
 		
 		for(int i = 0; i < bands; ++i){
 			double v = cabs(fft_out[x++]);
-			v = (v - 16.) / 64.;
+			v = v / 64.;
 				
-			bars[i] = max(0., (pow(max(0., v), 2.8) - 0.2) * pow(1.4 - volume, 2.5)) * 0.3 + (bars[i] * 0.7);
+			bars[i] = max(0., pow(max(0., v), 2.5 + (1. - volume)) - 0.2) * 0.25
+			        + (bars[i] * 0.75);
 			
 			m = max(m, bars[i]);
 		}
 		
-		if(m > 32.){
-			double sc = 32. / m;
+		if(m > (double)MAX_PIXEL_HEIGHT){
+			double sc = (double)MAX_PIXEL_HEIGHT / m;
 			for(int i = 0; i < bands; i++){
 				bars[i] *= sc;
 			}
