@@ -21,15 +21,11 @@
 /* Modifications by Alex Baines <alex@abaines.me.uk> */
 
 extern "C" {
-
-#include <audacious/plugin.h>
-#include <audacious/misc.h>
-#include <gtk/gtk.h>
 #include <complex.h>
 #include <fftw3.h>
-
 }
 
+#include "spectrum.h"
 #include <vector>
 #include <cmath>
 #include <algorithm>
@@ -102,7 +98,7 @@ static void do_fft(int N, int K, double* in){
 
 static double volume = 0.0;
 
-static void render_cb (const float* pcm){
+void render_cb (const float* pcm){
 
 	g_return_if_fail (spect_widget);
 
@@ -141,8 +137,8 @@ static void render_cb (const float* pcm){
 			double v = cabs(fft_out[x++]);
 			v = v / 64.;
 				
-			bars[i] = max(0., pow(max(0., v), 2.5 + (1. - volume)) - 0.2) * 0.25
-			        + (bars[i] * 0.75);
+			bars[i] = max(0., pow(max(0., v), 2.5 + (1. - volume)) - 0.2) * 0.35
+			        + (bars[i] * 0.65);
 			
 			m = max(m, bars[i]);
 		}
@@ -191,46 +187,31 @@ static gboolean configure_event (GtkWidget * widget, GdkEventConfigure * event)
 	return TRUE;
 }
 
-#if GTK_CHECK_VERSION (3, 0, 0)
-static gboolean draw_event (GtkWidget * widget, cairo_t * cr, GtkWidget * area)
-{
-#else
 static gboolean expose_event (GtkWidget * widget, GdkEventExpose * event, GtkWidget * area)
 {
 	cairo_t * cr = gdk_cairo_create (gtk_widget_get_window (widget));
-#endif
 
 	draw_background (widget, cr);
 	draw_visualizer (widget, cr);
 
-#if ! GTK_CHECK_VERSION (3, 0, 0)
 	cairo_destroy (cr);
-#endif
-
 	return TRUE;
 }
 
 static gboolean destroy_event (void)
 {
-	aud_vis_func_remove ((VisFunc) render_cb);
 	spect_widget = NULL;
 	return TRUE;
 }
 
-extern "C" gpointer get_aud_widget(void)
+gpointer get_aud_widget(void)
 {
 	GtkWidget *area = gtk_drawing_area_new();
 	spect_widget = area;
 
-#if GTK_CHECK_VERSION (3, 0, 0)
-	g_signal_connect(area, "draw", (GCallback) draw_event, NULL);
-#else
 	g_signal_connect(area, "expose-event", (GCallback) expose_event, NULL);
-#endif
 	g_signal_connect(area, "configure-event", (GCallback) configure_event, NULL);
 	g_signal_connect(area, "destroy", (GCallback) destroy_event, NULL);
-
-	aud_vis_func_add (AUD_VIS_TYPE_MONO_PCM, (VisFunc) &render_cb);
 	
 	return area;
 }

@@ -2,6 +2,7 @@
 #define SPECTRUM_H_
 #include <gtk/gtk.h>
 
-extern gpointer get_aud_widget(void);
+gpointer get_aud_widget(void);
+void render_cb (const float* pcm);
 
 #endif
